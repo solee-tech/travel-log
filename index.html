@@ -11,7 +11,7 @@
   <!-- 纯前端 PDF 生成库 -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
   
-  <!-- Flatpickr 日历组件 (采用国内极速稳定 Staticfile 节点) -->
+  <!-- Flatpickr 日历组件 (采用稳定 CDN) -->
   <link rel="stylesheet" href="https://cdn.staticfile.net/flatpickr/4.6.13/flatpickr.min.css">
   <script src="https://cdn.staticfile.net/flatpickr/4.6.13/flatpickr.min.js"></script>
   <script src="https://cdn.staticfile.net/flatpickr/4.6.13/l10n/zh.min.js"></script>
@@ -321,8 +321,6 @@
     .report-photo img { display: block; width: 100%; height: auto; max-height: 110mm; object-fit: contain; margin: 0 auto; }
     .first-page-photo img { max-height: 65mm; }
     .report-photo p { margin: 6pt 0 0; white-space: pre-wrap; font-size: 12pt; line-height: 1.4; color: #26352f; border-top: 1px dashed #dfe5e2; padding-top: 6pt; }
-    
-    .photo-page-grid { display: flex; flex-direction: column; gap: 5mm; }
   </style>
 </head>
 <body>
@@ -402,7 +400,6 @@
 
       function generateId() { return Date.now().toString(36) + Math.random().toString(36).substring(2); }
 
-      // 默认初始化包含第一天空壳，自动显示
       let appState = {
         periodRaw: '',
         startDate: '',
@@ -438,7 +435,7 @@
         pdfLoadingSplash: document.getElementById('pdfLoadingSplash')
       };
 
-      const draftKey = 'business-travel-log-perfect';
+      const draftKey = 'business-travel-log-pro';
       let fpInstance = null;
 
       function showToast(text) {
@@ -493,7 +490,7 @@
         return String(value || '').replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;').replaceAll("'", '&#039;');
       }
 
-      // ========== 核心：日历区间与防越界极致修复 ==========
+      // ========== 核心：顶部全局日历引擎 ==========
       try {
         fpInstance = flatpickr(DOM.globalPeriod, {
           mode: "range",
@@ -554,7 +551,7 @@
             <div class="day-header">
               <span class="day-title">第 ${index + 1} 天</span>
               <div style="display:flex; align-items:center; gap:8px;">
-                <!-- 彻底根治 iOS 无视 min/max 的漏洞：下方日历也用 Flatpickr 强制接管 -->
+                <!-- 纯净版 input 挂载 Flatpickr，移除了任何可能导致报错的 click 属性 -->
                 <input type="text" class="date-badge daily-date-input" data-id="${day.id}" data-field="date" value="${day.date}" placeholder="选择日期" readonly>
                 ${index > 0 ? `<button class="btn-remove-day" data-id="${day.id}" title="删除此天">×</button>` : `<span style="width:24px"></span>`}
               </div>
@@ -587,7 +584,7 @@
           DOM.dayList.appendChild(card);
         });
 
-        // 将每天的日期输入框挂载强大的 Flatpickr，绝不允许选择越界日期
+        // 为每天的日期赋予纯正的 Flatpickr 日历（完美兼容 Windows 与 iOS）
         document.querySelectorAll('.daily-date-input').forEach(input => {
           const dayId = input.dataset.id;
           const fp = flatpickr(input, {
@@ -629,7 +626,11 @@
         const maxAllowed = (appState.endDate && appState.endDate < today) ? appState.endDate : today;
 
         if (nextDateStr > maxAllowed) {
-          showMessage(`已超出设定的差旅时段（截止于${appState.endDate}），若行程延期请先修改顶部时段。`);
+          if (appState.endDate && nextDateStr > appState.endDate) {
+            showMessage(`已超出设定的差旅时段（截止于${appState.endDate}），若行程延期请先修改顶部时段。`);
+          } else {
+            showMessage("系统推算的下一天已超过今天的现实时间，未来的行程暂无法填写。");
+          }
           return;
         }
 
@@ -650,8 +651,9 @@
       DOM.dayList.addEventListener('input', (e) => {
         if (e.target.classList.contains('day-input') && !e.target.classList.contains('daily-date-input')) {
           const id = e.target.dataset.id;
+          const field = e.target.dataset.field;
           const day = appState.days.find(d => d.id === id);
-          if (day) day[e.target.dataset.field] = e.target.value;
+          if (day) day[field] = e.target.value;
         }
         if (e.target.classList.contains('photo-caption')) {
           const day = appState.days.find(d => d.id === e.target.dataset.dayId);
@@ -929,7 +931,6 @@
           // 呼出强制防白屏的加载遮罩
           DOM.pdfLoadingSplash.style.display = 'flex';
           
-          // 将隐藏的 report 拉到前端并显示，让浏览器有时间解码超大图片
           DOM.appShell.style.display = 'none'; 
           DOM.report.style.display = 'block';  
           DOM.report.style.position = 'absolute';
@@ -947,10 +948,8 @@
             pagebreak: { mode: ['css', 'legacy'] } 
           };
 
-          // 强制休眠 1.2 秒给浏览器渲染图片的时间，100% 杜绝白纸
           setTimeout(() => {
             html2pdf().set(opt).from(DOM.report).save().then(() => {
-              // 截完图后恢复原状
               DOM.report.style.display = 'none';
               DOM.appShell.style.display = 'block';
               DOM.pdfLoadingSplash.style.display = 'none';
@@ -973,6 +972,5 @@
   </script>
 </body>
 </html>
-
 
 
