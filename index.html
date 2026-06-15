@@ -1,19 +1,28 @@
+
 <!doctype html>
 <html lang="zh-CN">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0, viewport-fit=cover">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-title" content="差旅日志">
   <title>差旅日志</title>
-  <!-- 引入 html2pdf.js 用于纯前端生成无杂质的 PDF -->
+  
+  <!-- 纯前端 PDF 生成库 -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  
+  <!-- Flatpickr 日历组件 (采用国内极速稳定 Staticfile 节点) -->
+  <link rel="stylesheet" href="https://cdn.staticfile.net/flatpickr/4.6.13/flatpickr.min.css">
+  <script src="https://cdn.staticfile.net/flatpickr/4.6.13/flatpickr.min.js"></script>
+  <script src="https://cdn.staticfile.net/flatpickr/4.6.13/l10n/zh.min.js"></script>
+
   <style>
     :root {
       color-scheme: light;
       --bg: #f4f6f8;
       --panel: #fff;
       --soft: #f8faf9;
+      --card-bg: #fdfdfd;
       --text: #17211d;
       --muted: #66736e;
       --line: #dfe5e2;
@@ -31,7 +40,7 @@
       min-height: 100vh;
       background: linear-gradient(180deg, #eef3f1 0, #f4f6f8 280px), var(--bg);
       color: var(--text);
-      font-size: 22px; 
+      font-size: 20px; 
     }
 
     button, input, textarea { font: inherit; }
@@ -39,7 +48,7 @@
 
     .app {
       min-height: 100vh;
-      padding: max(18px, env(safe-area-inset-top)) 14px max(22px, env(safe-area-inset-bottom));
+      padding: max(16px, env(safe-area-inset-top)) 14px max(22px, env(safe-area-inset-bottom));
     }
 
     .shell { width: min(100%, 920px); margin: 0 auto; }
@@ -56,87 +65,142 @@
     .eyebrow {
       margin: 0 0 6px;
       color: var(--accent);
-      font-size: 21px; 
+      font-size: 19px; 
       font-weight: 800;
       letter-spacing: .08em;
       text-transform: uppercase;
     }
 
-    h1 { margin: 0; font-size: 40px; line-height: 1.08; letter-spacing: 0; } 
-
-    .status {
-      min-width: 95px;
-      min-height: 36px;
-      padding: 6px 14px;
-      border: 1px solid rgba(18, 108, 98, .2);
-      border-radius: 999px;
-      background: rgba(255, 255, 255, .7);
-      color: var(--accent-dark);
-      font-size: 21px; 
-      font-weight: 700;
-      text-align: center;
-      white-space: nowrap;
-    }
+    h1 { margin: 0; font-size: 36px; line-height: 1.08; letter-spacing: 0; } 
 
     .panel {
       background: var(--panel);
       border: 1px solid var(--line);
-      border-radius: 8px;
+      border-radius: 12px;
       box-shadow: var(--shadow);
-      padding: 22px;
+      padding: 20px;
+      margin-bottom: 16px;
     }
 
-    .panel + .panel { margin-top: 14px; }
-
     .section-title {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-      margin: 0 0 14px;
+      font-size: 22px;
+      font-weight: 800;
+      color: var(--text);
+      margin: 0 0 16px;
       padding-bottom: 12px;
       border-bottom: 1px solid var(--line);
     }
 
-    h2 { margin: 0; color: #26352f; font-size: 26px; line-height: 1.25; letter-spacing: 0; } 
-
-    .grid {
-      display: grid;
-      grid-template-columns: 1fr;
-      gap: 13px;
-    }
+    .grid { display: grid; grid-template-columns: 1fr; gap: 14px; }
 
     label {
       display: grid;
-      gap: 7px;
+      gap: 8px;
       color: var(--muted);
-      font-size: 22px; 
+      font-size: 18px; 
       font-weight: 650;
     }
 
     input, textarea {
       width: 100%;
-      min-height: 52px;
+      min-height: 48px;
       border: 1px solid var(--line);
       border-radius: 8px;
-      padding: 12px 14px;
+      padding: 10px 14px;
       background: var(--soft);
       color: var(--text);
-      font-size: 21px; 
+      font-size: 19px; 
       outline: none;
       -webkit-appearance: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    
+    input[readonly] {
+      background: #fff;
+      cursor: pointer;
     }
 
-    textarea { min-height: 140px; resize: vertical; line-height: 1.5; }
+    textarea { min-height: 90px; resize: vertical; line-height: 1.5; }
 
     input:focus, textarea:focus {
       border-color: var(--accent);
       background: #fff;
-      box-shadow: 0 0 0 4px rgba(18, 108, 98, .16);
+      box-shadow: 0 0 0 3px rgba(18, 108, 98, .16);
+    }
+
+    /* 修复 Flatpickr 显示与字号放大 */
+    .flatpickr-calendar {
+      font-size: 18px !important; 
+      width: 340px !important;    
+      padding-bottom: 10px !important;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.15) !important;
+    }
+    .flatpickr-month { height: 60px !important; }
+    .flatpickr-current-month {
+      font-size: 140% !important; 
+      height: auto !important;
+      padding-top: 10px !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      gap: 4px !important;
+    }
+    .numInputWrapper { width: 8ch !important; }
+    .flatpickr-day {
+      height: 44px !important;
+      line-height: 44px !important;
+      max-width: 44px !important;
+      font-size: 17px !important; 
+    }
+
+    /* 每日行程卡片 */
+    .day-list { display: grid; gap: 20px; }
+    
+    .day-card {
+      background: var(--card-bg);
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 18px 14px;
+      position: relative;
+    }
+    
+    .day-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+      padding-bottom: 12px;
+      border-bottom: 1px dashed var(--line);
+    }
+    
+    .day-title { font-size: 20px; font-weight: 800; color: var(--accent-dark); display: flex; align-items: center; gap: 8px;}
+    
+    .btn-remove-day {
+      background: none;
+      color: var(--danger);
+      font-size: 24px;
+      padding: 0 8px;
+      border-radius: 4px;
+      font-weight: bold;
+      line-height: 1;
+      margin-right: -8px;
+    }
+
+    .date-badge {
+      border: 1px solid var(--line);
+      background: #f4f6f8;
+      border-radius: 6px;
+      padding: 6px 10px;
+      font-size: 18px;
+      color: var(--text);
+      min-height: 42px;
+      text-align: center;
+      width: auto;
+      max-width: 180px;
     }
 
     .btn {
-      min-height: 52px;
+      min-height: 50px;
       border-radius: 8px;
       padding: 0 18px;
       display: inline-flex;
@@ -146,125 +210,66 @@
       color: #fff;
       background: var(--accent);
       font-weight: 800;
-      font-size: 21px; 
+      font-size: 19px; 
       white-space: nowrap;
     }
 
     .btn.secondary { color: #26352f; background: #eef3f1; border: 1px solid var(--line); }
     .btn.danger { background: var(--danger); }
-    .btn.icon { width: 52px; flex: 0 0 52px; padding: 0; font-size: 27px; } 
+    .btn.outline { background: transparent; color: var(--accent); border: 2px dashed var(--accent); width: 100%; margin-top: 10px;}
 
-    .photo-input { display: none; }
+    /* 卡片内部照片区域 */
+    .day-photos-section { margin-top: 20px; border-top: 1px dashed var(--line); padding-top: 16px; }
     .photo-list { display: grid; gap: 12px; margin-top: 12px; }
-
-    .photo-card {
-      display: grid;
-      gap: 11px;
-      padding: 12px;
-      border: 1px solid var(--line);
-      border-radius: 8px;
-      background: var(--soft);
-    }
-
-    .photo-card img {
-      width: 100%;
-      aspect-ratio: 4 / 3;
-      object-fit: cover;
-      border-radius: 6px;
-      border: 1px solid var(--line);
-      background: #e8eeeb;
-    }
-
+    .photo-card { display: grid; gap: 10px; padding: 12px; border: 1px solid var(--line); border-radius: 8px; background: #fdfdfd; }
+    
+    /* 强硬死锁：图片不论横竖绝对不可拉伸，保持实际比例 (object-fit: contain) */
+    .photo-card img { width: 100%; height: auto; max-height: 220px; object-fit: contain; border-radius: 6px; border: 1px solid var(--line); background: #e8eeeb; }
     .photo-actions { display: flex; justify-content: space-between; gap: 10px; }
 
-    .empty {
-      min-height: 110px;
-      display: grid;
-      place-items: center;
-      border: 1px dashed #b9c5c0;
-      border-radius: 8px;
-      color: var(--muted);
-      text-align: center;
-      padding: 18px;
-      background: var(--soft);
-      line-height: 1.5;
-      font-size: 22px; 
-    }
+    .toolbar { position: sticky; bottom: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 24px; padding: 12px 0 16px; background: linear-gradient(to top, var(--bg) 85%, rgba(244, 246, 248, 0)); z-index: 10; }
 
-    .print-tip {
-      background: #eef5f4;
-      border-left: 5px solid var(--accent);
-      padding: 16px;
-      border-radius: 6px;
-      font-size: 21px; 
-      line-height: 1.55;
-      color: #1e3b37;
-      margin: 16px 0 6px;
-    }
-
-    .print-tip strong {
-      color: var(--accent-dark);
-    }
-
-    .toolbar {
-      position: sticky;
-      bottom: 0;
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 10px;
-      margin-top: 10px;
-      padding: 12px 0 0;
-      background: linear-gradient(to top, var(--bg) 78%, rgba(244, 246, 248, 0));
-      z-index: 2;
-    }
-
-    .modal-overlay {
+    .toast {
       position: fixed;
-      top: 0; left: 0; right: 0; bottom: 0;
-      background: rgba(23, 33, 29, 0.45);
-      backdrop-filter: blur(2px);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 1000;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(23, 33, 29, 0.9);
+      color: #fff;
+      padding: 12px 24px;
+      border-radius: 999px;
+      font-size: 17px;
+      font-weight: 600;
+      z-index: 9999;
       opacity: 0;
       pointer-events: none;
-      transition: opacity 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      transition: opacity 0.3s;
     }
-    .modal-overlay.active {
-      opacity: 1;
-      pointer-events: auto;
+    .toast.show { opacity: 1; }
+
+    /* 通用弹窗 */
+    .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(23, 33, 29, 0.45); backdrop-filter: blur(2px); display: flex; align-items: center; justify-content: center; z-index: 10000; opacity: 0; pointer-events: none; transition: opacity 0.2s; }
+    .modal-overlay.active { opacity: 1; pointer-events: auto; }
+    .modal-box { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; width: min(90%, 400px); padding: 24px; box-shadow: 0 24px 50px rgba(0, 0, 0, 0.15); transform: scale(0.95); transition: transform 0.2s; }
+    .modal-overlay.active .modal-box { transform: scale(1); }
+    .modal-title { margin: 0 0 12px; font-size: 22px; font-weight: 800; color: var(--accent-dark); }
+    .modal-text { font-size: 19px; color: #26352f; line-height: 1.5; margin-bottom: 24px; white-space: pre-wrap;}
+    .modal-actions { display: flex; justify-content: flex-end; gap: 12px; }
+
+    /* 强制防白屏的加载遮罩层 */
+    #pdfLoadingSplash {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(255,255,255,0.98);
+      z-index: 99999;
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
     }
-    .modal-box {
-      background: var(--panel);
-      border: 1px solid var(--line);
-      border-radius: 12px;
-      width: min(90%, 450px);
-      padding: 24px;
-      box-shadow: 0 24px 50px rgba(0, 0, 0, 0.15);
-      transform: scale(0.9);
-      transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    .spinner {
+      width: 50px; height: 50px; border: 5px solid #dfe5e2; border-top-color: #126c62; border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 20px;
     }
-    .modal-overlay.active .modal-box {
-      transform: scale(1);
-    }
-    .modal-title {
-      margin: 0 0 12px;
-      font-size: 25px; 
-      font-weight: 800;
-      color: #ad3b2e;
-    }
-    .modal-text {
-      font-size: 21px; 
-      color: #26352f;
-      line-height: 1.55;
-      margin-bottom: 24px;
-    }
-    .modal-actions {
-      display: flex;
-      justify-content: flex-end;
-      gap: 12px;
-    }
+    @keyframes spin { to { transform: rotate(360deg); } }
 
     @media (min-width: 740px) {
       .app { padding-left: 24px; padding-right: 24px; }
@@ -272,177 +277,67 @@
       .toolbar { grid-template-columns: repeat(4, minmax(0, 1fr)); }
     }
 
-    /* ================= 打印与 PDF 导出专属 ================= */
+    /* ================= PDF 打印排版 ================= */
     @media print {
       @page { size: A4; margin: 0; }
-      @page :first { margin: 0; }
-      @page :left  { margin: 0; }
-      @page :right { margin: 0; }
-      * { box-shadow: none !important; }
       html, body { margin: 0 !important; padding: 0 !important; background: #fff !important; }
-      body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
       .app { display: none !important; }
-      .report { display: block !important; }
+      .report { display: block !important; position: relative !important; z-index: 1 !important; left: 0 !important; }
     }
-
-    body.pdf-exporting { background: #fff !important; margin: 0 !important; padding: 0 !important; }
+    
+    body.pdf-exporting { background: #fff !important; margin: 0 !important; padding: 0 !important; overflow: hidden !important; }
     body.pdf-exporting .app { display: none !important; }
     body.pdf-exporting .report { display: block !important; }
 
-    .report {
-      display: none;
-      color: #141a17;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      background: #fff;
-    }
-
-    /* 严格控制页面高度，避免 1 像素溢出导致的白页 */
-    .print-page {
-      width: 210mm;
-      height: 295.5mm; /* 稍微缩小一点，给A4纸(297mm)留出绝对安全边距 */
-      padding: 16mm 18mm;
-      background: #fff;
-      box-sizing: border-box;
-      page-break-after: always;
-      break-after: page;
-      overflow: hidden;
-      display: flex;
-      flex-direction: column;
-    }
-
-    .print-page:last-of-type {
-      page-break-after: avoid;
-      break-after: avoid;
-    }
-
-    .report-cover {
-      border-bottom: 3px solid #123f39;
-      padding-bottom: 5mm;
-      margin-bottom: 5mm;
-      flex-shrink: 0;
-    }
-
-    .report-kicker {
-      margin: 0 0 2mm;
-      color: #126c62;
-      font-size: 12pt; 
-      font-weight: 800;
-      letter-spacing: .08em;
-      text-transform: uppercase;
-    }
-
-    .report h1 {
-      margin: 0;
-      font-size: 30pt; 
-      line-height: 1.15;
-    }
-
-    .report h2 {
-      margin: 0 0 3mm;
-      color: #123f39;
-      font-size: 17pt; 
-      line-height: 1.3;
-      flex-shrink: 0;
-    }
-
-    .report-section {
-      margin-bottom: 5mm;
-      flex-shrink: 0;
-    }
-
-    .report-table {
-      width: 100%;
-      border-collapse: collapse;
-      table-layout: fixed;
-    }
-
-    .report-table th,
-    .report-table td {
-      border: 1px solid #b9c2bf;
-      padding: 8pt 10pt;
-      vertical-align: top;
-      text-align: left;
-      font-size: 13pt; 
-      line-height: 1.45;
-      word-break: break-word;
-    }
-
-    .report-table th {
-      width: 24%;
-      background: #eef3f1;
-      color: #26352f;
-      font-weight: 800;
-    }
-
-    .report-notes {
-      border: 1px solid #b9c2bf;
-      padding: 10pt;
-      min-height: 45pt;
-      white-space: pre-wrap;
-      font-size: 13pt; 
-      line-height: 1.55;
-    }
-
-    .photo-page {
-      display: flex;
-      flex-direction: column;
-    }
-
-    .photo-page-grid {
-      display: flex;
-      flex-direction: column;
-      gap: 5mm;
-      flex: 1;
-      min-height: 0;
-    }
-
-    .report-photo {
-      border: 1px solid #b9c2bf;
-      padding: 8pt 10pt;
-      margin: 0;
-      box-sizing: border-box;
-      background: #fff;
-      display: flex;
-      flex-direction: column;
-      break-inside: avoid;
-      page-break-inside: avoid;
-    }
-
-    .photo-page .report-photo {
-      flex: 1;
-      min-height: 0;
-    }
-
-    .report-photo img {
-      display: block;
-      width: 100%;
-      flex: 1;
-      min-height: 0;
-      object-fit: contain;
-      margin: 0 auto;
-    }
-
-    .first-page-photo {
-      flex-shrink: 0;
-    }
-    .first-page-photo img {
-      flex: none;
-      max-height: 75mm;
-      width: auto;
-      max-width: 100%;
-    }
-
-    .report-photo p {
-      margin: 6pt 0 0;
-      white-space: pre-wrap;
-      font-size: 12.5pt; 
-      line-height: 1.41;
-      color: #26352f;
-      flex-shrink: 0;
-    }
+    /* 彻底沉底隐藏的预渲染容器，保证不干扰前端，但浏览器已加载 DOM */
+    .report { display: none; color: #141a17; font-family: -apple-system, BlinkMacSystemFont, sans-serif; background: #fff; width: 210mm; position: absolute; top: 0; left: -9999px; z-index: -1;}
+    
+    /* 强制每一天独立分页 */
+    .print-page { width: 210mm; min-height: 295.5mm; padding: 16mm 18mm; background: #fff; box-sizing: border-box; page-break-after: always; display: flex; flex-direction: column; }
+    .print-page:last-of-type { page-break-after: avoid; }
+    
+    .report-cover { border-bottom: 3px solid #123f39; margin-bottom: 5mm; padding-bottom: 5mm; }
+    .report-kicker { margin: 0 0 2mm; color: #126c62; font-size: 12pt; font-weight: 800; text-transform: uppercase; }
+    .report h1 { margin: 0; font-size: 28pt; line-height: 1.15; }
+    .report h2 { margin: 0 0 3mm; color: #123f39; font-size: 16pt; line-height: 1.3; }
+    
+    .global-info { margin-bottom: 8mm; }
+    
+    .report-table { width: 100%; border-collapse: collapse; table-layout: fixed; margin-bottom: 4mm;}
+    .report-table th, .report-table td { border: 1px solid #b9c2bf; padding: 8pt 10pt; vertical-align: middle; text-align: left; font-size: 12.5pt; line-height: 1.45; word-break: break-word; }
+    .report-table th { width: 22%; background: #eef3f1; color: #26352f; font-weight: 800; }
+    
+    .day-block { page-break-inside: auto; flex: 1; }
+    .day-text-box { border: 2px solid #126c62; border-radius: 6px; overflow: hidden; page-break-inside: avoid; margin-bottom: 4mm;}
+    .day-block-title { background: #126c62; color: #fff; font-size: 14pt; font-weight: bold; padding: 2mm 3mm; }
+    .day-text-box .report-table { margin-bottom: 0; border: none; border-top: 0; }
+    .day-text-box .report-table th, .day-text-box .report-table td { border-left: none; border-right: none; }
+    .day-text-box .report-table tr:first-child th, .day-text-box .report-table tr:first-child td { border-top: none; }
+    .day-text-box .report-table tr:last-child th, .day-text-box .report-table tr:last-child td { border-bottom: none; }
+    .report-notes { padding: 10pt; min-height: 35pt; white-space: pre-wrap; font-size: 12.5pt; line-height: 1.55; border-top: 1px solid #b9c2bf;}
+    
+    .report-photo { border: 1px solid #b9c2bf; padding: 6pt; background: #fff; page-break-inside: avoid; margin-bottom: 4mm;}
+    /* 强制 PDF 图片保持原始比例 */
+    .report-photo img { display: block; width: 100%; height: auto; max-height: 110mm; object-fit: contain; margin: 0 auto; }
+    .first-page-photo img { max-height: 65mm; }
+    .report-photo p { margin: 6pt 0 0; white-space: pre-wrap; font-size: 12pt; line-height: 1.4; color: #26352f; border-top: 1px dashed #dfe5e2; padding-top: 6pt; }
+    
+    .photo-page-grid { display: flex; flex-direction: column; gap: 5mm; }
   </style>
 </head>
 <body>
+  <!-- 全局隐藏的文件选择器 -->
+  <input type="file" id="globalPhotoInput" accept="image/*" multiple style="display:none;">
+  
+  <div id="toast" class="toast"></div>
+
+  <!-- PDF 渲染防白屏强制遮罩 -->
+  <div id="pdfLoadingSplash">
+    <div class="spinner"></div>
+    <div style="font-size:24px; font-weight:bold; color:#126c62;">正在生成高清 PDF，请勿锁屏...</div>
+    <div style="font-size:16px; color:#666; margin-top:12px;">(因照片需完整加载排版，约需等待 1-2 秒)</div>
+  </div>
+
   <main class="app">
     <div class="shell">
       <header class="topbar">
@@ -450,430 +345,634 @@
           <p class="eyebrow">Business Travel Log</p>
           <h1>差旅日志</h1>
         </div>
-        <div class="status" id="status">已准备</div>
       </header>
 
-      <section class="panel" aria-label="差旅基本信息">
-        <div class="section-title">
-          <h2>基本信息</h2>
-          <button class="btn secondary icon" id="fillNow" type="button" aria-label="填入当前时间" title="填入当前时间">↺</button>
+      <section class="panel">
+        <div class="section-title">基本信息</div>
+        <div class="grid">
+          <label>差旅时段
+            <input id="globalPeriod" type="text" placeholder="选择起始与结束日期" readonly>
+          </label>
+          <label>区域
+            <input id="region" type="text" placeholder="省市">
+          </label>
         </div>
-
-        <div class="grid two">
-          <label>日期时间<input id="dateTime" type="datetime-local"></label>
-          <label>差旅人员<input id="traveler" type="text" placeholder="例如：王明"></label>
-          <label>地点<input id="place" type="text" placeholder="例如：上海市浦东新区"></label>
-          <label>公司名称<input id="company" type="text" placeholder="例如：某某科技有限公司"></label>
-          <label>对接人员<input id="contactPerson" type="text" placeholder="例如：张先生、李女士"></label>
-        </div>
-
-        <label style="margin-top: 13px;">差旅记录<textarea id="notes" placeholder="记录拜访目的、沟通内容、关键结论、后续事项等"></textarea></label>
       </section>
 
-      <section class="panel" aria-label="照片与注释">
-        <div class="section-title">
-          <h2>照片与注释</h2>
-          <button class="btn secondary" id="addPhoto" type="button">＋ 添加照片</button>
-          <input class="photo-input" id="photoInput" type="file" accept="image/*" multiple>
-        </div>
-        <div id="photoList" class="photo-list"></div>
+      <section class="panel">
+        <div class="section-title">每日行程记录</div>
+        <div id="dayList" class="day-list"></div>
+        <button class="btn outline" id="btnAddDay" type="button">＋ 添加下一天行程</button>
       </section>
 
-      <div class="toolbar" aria-label="操作">
+      <div class="toolbar">
         <button class="btn secondary" id="saveDraft" type="button">保存草稿</button>
         <button class="btn secondary" id="loadDraft" type="button">读取草稿</button>
-        <button class="btn danger" id="clearAll" type="button">清空</button>
+        <button class="btn danger" id="clearAll" type="button">清空页面</button>
         <button class="btn" id="exportPdf" type="button">导出 PDF</button>
       </div>
     </div>
   </main>
 
-  <div id="confirmModal" class="modal-overlay">
+  <div id="messageModal" class="modal-overlay">
     <div class="modal-box">
-      <div class="modal-title">⚠ 确认清空</div>
-      <div class="modal-text">确定要清空当前的全部内容吗？此操作将抹去所有输入的文本和已上传的照片，且无法恢复。</div>
+      <div class="modal-title" id="msgTitle">提示</div>
+      <div class="modal-text" id="msgText"></div>
       <div class="modal-actions">
-        <button class="btn secondary" id="modalCancel" type="button">取消</button>
-        <button class="btn danger" id="modalConfirm" type="button">确定清空</button>
+        <button class="btn secondary" id="msgClose" type="button">确定</button>
       </div>
     </div>
   </div>
 
-  <article class="report" id="report" aria-label="差旅日志 PDF"></article>
+  <div id="actionConfirmModal" class="modal-overlay">
+    <div class="modal-box">
+      <div class="modal-title" style="color:var(--danger)">系统确认</div>
+      <div class="modal-text" id="confirmText">确定执行此操作吗？</div>
+      <div class="modal-actions">
+        <button class="btn secondary" id="actionCancelBtn" type="button">取消</button>
+        <button class="btn danger" id="actionConfirmBtn" type="button">确定</button>
+      </div>
+    </div>
+  </div>
+
+  <article class="report" id="report"></article>
 
   <script>
-    const fields = {
-      dateTime: document.getElementById('dateTime'),
-      traveler: document.getElementById('traveler'),
-      place: document.getElementById('place'),
-      company: document.getElementById('company'),
-      contactPerson: document.getElementById('contactPerson'),
-      notes: document.getElementById('notes')
-    };
+    window.addEventListener('DOMContentLoaded', () => {
 
-    const statusEl = document.getElementById('status');
-    const photoInput = document.getElementById('photoInput');
-    const photoList = document.getElementById('photoList');
-    const report = document.getElementById('report');
+      function generateId() { return Date.now().toString(36) + Math.random().toString(36).substring(2); }
 
-    const confirmModal = document.getElementById('confirmModal');
-    const modalCancel = document.getElementById('modalCancel');
-    const modalConfirm = document.getElementById('modalConfirm');
-    let confirmCallback = null;
-
-    const draftKey = 'business-travel-log-draft-v3';
-    let photos = [];
-
-    function setStatus(text) {
-      statusEl.textContent = text;
-      window.clearTimeout(setStatus.timer);
-      setStatus.timer = window.setTimeout(() => statusEl.textContent = '已准备', 2200);
-    }
-
-    function showConfirm(callback) {
-      confirmCallback = callback;
-      confirmModal.classList.add('active');
-    }
-
-    modalCancel.addEventListener('click', () => {
-      confirmModal.classList.remove('active');
-      confirmCallback = null;
-    });
-
-    modalConfirm.addEventListener('click', () => {
-      confirmModal.classList.remove('active');
-      if (confirmCallback) confirmCallback();
-      confirmCallback = null;
-    });
-
-    function pad(value) { return String(value).padStart(2, '0'); }
-
-    function currentDateTimeValue() {
-      const now = new Date();
-      return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}`;
-    }
-
-    function formatDateTime(value) {
-      if (!value) return '';
-      const date = new Date(value);
-      if (Number.isNaN(date.getTime())) return value.replace('T', ' ');
-      return new Intl.DateTimeFormat('zh-CN', {
-        year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit'
-      }).format(date);
-    }
-
-    function fileDate(value) {
-      return value ? value.slice(0, 10) : '';
-    }
-
-    function cleanFilePart(value) {
-      return String(value || '').trim().replace(/[\\/:*?"<>|]/g, '').replace(/\s+/g, '');
-    }
-
-    function pdfFileName() {
-      const date = cleanFilePart(fileDate(fields.dateTime.value));
-      const company = cleanFilePart(fields.company.value);
-      return [date, company, '差旅日志'].filter(Boolean).join('-') || '差旅日志';
-    }
-
-    function escapeHtml(value) {
-      return String(value || '')
-        .replaceAll('&', '&amp;')
-        .replaceAll('<', '&lt;')
-        .replaceAll('>', '&gt;')
-        .replaceAll('"', '&quot;')
-        .replaceAll("'", '&#039;');
-    }
-
-    function loadImage(dataUrl) {
-      return new Promise((resolve, reject) => {
-        const image = new Image();
-        image.onload = () => resolve(image);
-        image.onerror = reject;
-        image.src = dataUrl;
-      });
-    }
-
-    async function compressImage(dataUrl) {
-      const image = await loadImage(dataUrl);
-      const maxSide = 1400;
-      const scale = Math.min(1, maxSide / Math.max(image.width, image.height));
-      const width = Math.max(1, Math.round(image.width * scale));
-      const height = Math.max(1, Math.round(image.height * scale));
-      const canvas = document.createElement('canvas');
-      const context = canvas.getContext('2d');
-      canvas.width = width;
-      canvas.height = height;
-      context.drawImage(image, 0, 0, width, height);
-      return canvas.toDataURL('image/jpeg', 0.84);
-    }
-
-    function readImage(file) {
-      return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = async () => {
-          try {
-            resolve({
-              id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
-              name: file.name,
-              dataUrl: await compressImage(reader.result),
-              caption: ''
-            });
-          } catch (error) {
-            reject(error);
-          }
-        };
-        reader.onerror = reject;
-        reader.readAsDataURL(file);
-      });
-    }
-
-    function renderPhotos() {
-      if (!photos.length) {
-        photoList.innerHTML = '<div class="empty">还没有照片。可从相册选择，也可直接拍照后添加。</div>';
-        return;
-      }
-
-      photoList.innerHTML = photos.map((photo, index) => `
-        <div class="photo-card" data-id="${photo.id}">
-          <img src="${photo.dataUrl}" alt="差旅照片 ${index + 1}">
-          <label>照片 ${index + 1} 注释<textarea data-caption="${photo.id}" placeholder="为这张照片添加说明">${escapeHtml(photo.caption)}</textarea></label>
-          <div class="photo-actions">
-            <button class="btn secondary" type="button" data-move-up="${photo.id}">上移</button>
-            <button class="btn danger" type="button" data-remove="${photo.id}">删除</button>
-          </div>
-        </div>
-      `).join('');
-    }
-
-    function getFormData() {
-      return {
-        dateTime: fields.dateTime.value,
-        traveler: fields.traveler.value.trim(),
-        place: fields.place.value.trim(),
-        company: fields.company.value.trim(),
-        contactPerson: fields.contactPerson.value.trim(),
-        notes: fields.notes.value.trim(),
-        photos
+      // 默认初始化包含第一天空壳，自动显示
+      let appState = {
+        periodRaw: '',
+        startDate: '',
+        endDate: '',
+        region: '',
+        days: [{
+          id: generateId(),
+          date: '',
+          traveler: '',
+          company: '',
+          contact: '',
+          notes: '',
+          photos: []
+        }]
       };
-    }
 
-    function applyFormData(data) {
-      fields.dateTime.value = data.dateTime || '';
-      fields.traveler.value = data.traveler || '';
-      fields.place.value = data.place || '';
-      fields.company.value = data.company || '';
-      fields.contactPerson.value = data.contactPerson || data.people || '';
-      fields.notes.value = data.notes || '';
-      photos = Array.isArray(data.photos) ? data.photos : [];
-      renderPhotos();
-    }
+      let currentPhotoTargetDayId = null;
+      let dailyFpInstances = []; // 保存每一天的子日历实例以便重置
 
-    function saveDraft() {
-      try {
-        localStorage.setItem(draftKey, JSON.stringify(getFormData()));
-        setStatus('草稿已保存');
-      } catch {
-        setStatus('照片较多，草稿保存失败');
-      }
-    }
+      const DOM = {
+        appShell: document.querySelector('.app'),
+        globalPeriod: document.getElementById('globalPeriod'),
+        region: document.getElementById('region'),
+        dayList: document.getElementById('dayList'),
+        btnAddDay: document.getElementById('btnAddDay'),
+        globalPhotoInput: document.getElementById('globalPhotoInput'),
+        saveDraft: document.getElementById('saveDraft'),
+        loadDraft: document.getElementById('loadDraft'),
+        clearAll: document.getElementById('clearAll'),
+        exportPdf: document.getElementById('exportPdf'),
+        report: document.getElementById('report'),
+        toast: document.getElementById('toast'),
+        pdfLoadingSplash: document.getElementById('pdfLoadingSplash')
+      };
 
-    function loadDraft() {
-      const raw = localStorage.getItem(draftKey)
-        || localStorage.getItem('business-travel-log-draft-v2')
-        || localStorage.getItem('business-trip-log-draft-v1');
-      if (!raw) {
-        setStatus('没有草稿');
-        return;
-      }
-      try {
-        applyFormData(JSON.parse(raw));
-        setStatus('草稿已读取');
-      } catch {
-        setStatus('草稿无法读取');
-      }
-    }
+      const draftKey = 'business-travel-log-perfect';
+      let fpInstance = null;
 
-    function buildReport() {
-      const data = getFormData();
-      let reportHtml = '';
-
-      reportHtml += `
-        <div class="print-page">
-          <section class="report-cover">
-            <p class="report-kicker">Business Travel Log</p>
-            <h1>差旅日志</h1>
-          </section>
-          <section class="report-section">
-            <h2>基本信息</h2>
-            <table class="report-table">
-              <tr><th>日期时间</th><td>${escapeHtml(formatDateTime(data.dateTime))}</td></tr>
-              <tr><th>差旅人员</th><td>${escapeHtml(data.traveler)}</td></tr>
-              <tr><th>地点</th><td>${escapeHtml(data.place)}</td></tr>
-              <tr><th>公司名称</th><td>${escapeHtml(data.company)}</td></tr>
-              <tr><th>对接人员</th><td>${escapeHtml(data.contactPerson)}</td></tr>
-            </table>
-          </section>
-          <section class="report-section">
-            <h2>差旅记录</h2>
-            <div class="report-notes">${escapeHtml(data.notes)}</div>
-          </section>
-      `;
-
-      if (data.photos.length > 0) {
-        reportHtml += `
-          <section class="report-section" style="margin-top: auto; margin-bottom: 0; flex-shrink: 0;">
-            <h2>照片与注释</h2>
-            <div class="report-photo first-page-photo">
-              <img src="${data.photos[0].dataUrl}" alt="差旅照片 1">
-              <p><strong>照片 1：</strong>${escapeHtml(data.photos[0].caption || '')}</p>
-            </div>
-          </section>
-        `;
-      }
-      reportHtml += `</div>`;
-
-      for (let i = 1; i < data.photos.length; i += 2) {
-        reportHtml += `
-          <div class="print-page photo-page">
-            <h2 style="flex-shrink:0; margin-bottom:4mm;">照片与注释（续）</h2>
-            <div class="photo-page-grid">
-              <div class="report-photo">
-                <img src="${data.photos[i].dataUrl}" alt="差旅照片 ${i + 1}">
-                <p><strong>照片 ${i + 1}：</strong>${escapeHtml(data.photos[i].caption || '')}</p>
-              </div>
-        `;
-
-        if (i + 1 < data.photos.length) {
-          reportHtml += `
-              <div class="report-photo">
-                <img src="${data.photos[i + 1].dataUrl}" alt="差旅照片 ${i + 2}">
-                <p><strong>照片 ${i + 2}：</strong>${escapeHtml(data.photos[i + 1].caption || '')}</p>
-              </div>
-          `;
-        }
-
-        reportHtml += `
-            </div>
-          </div>
-        `;
+      function showToast(text) {
+        DOM.toast.textContent = text;
+        DOM.toast.classList.add('show');
+        clearTimeout(showToast.timer);
+        showToast.timer = setTimeout(() => DOM.toast.classList.remove('show'), 2500);
       }
 
-      report.innerHTML = reportHtml;
-    }
-
-    document.getElementById('fillNow').addEventListener('click', () => {
-      fields.dateTime.value = currentDateTimeValue();
-      setStatus('已填入当前时间');
-    });
-
-    document.getElementById('addPhoto').addEventListener('click', () => photoInput.click());
-
-    photoInput.addEventListener('change', async (event) => {
-      const files = Array.from(event.target.files || []);
-      if (!files.length) return;
-      setStatus('正在处理照片');
-      try {
-        const images = await Promise.all(files.map(readImage));
-        photos = photos.concat(images);
-        photoInput.value = '';
-        renderPhotos();
-        setStatus(`已添加 ${images.length} 张照片`);
-      } catch {
-        setStatus('照片添加失败');
+      function showMessage(text, title = "提示") {
+        document.getElementById('msgTitle').textContent = title;
+        document.getElementById('msgText').textContent = text;
+        document.getElementById('messageModal').classList.add('active');
       }
-    });
-
-    photoList.addEventListener('input', (event) => {
-      const id = event.target.dataset.caption;
-      if (!id) return;
-      const photo = photos.find(item => item.id === id);
-      if (photo) photo.caption = event.target.value;
-    });
-
-    photoList.addEventListener('click', (event) => {
-      const removeId = event.target.dataset.remove;
-      const moveId = event.target.dataset.moveUp;
-
-      if (removeId) {
-        photos = photos.filter(photo => photo.id !== removeId);
-        renderPhotos();
-        setStatus('照片已删除');
-      }
-
-      if (moveId) {
-        const index = photos.findIndex(photo => photo.id === moveId);
-        if (index > 0) {
-          [photos[index - 1], photos[index]] = [photos[index], photos[index - 1]];
-          renderPhotos();
-          setStatus('照片已上移');
-        }
-      }
-    });
-
-    document.getElementById('saveDraft').addEventListener('click', saveDraft);
-    document.getElementById('loadDraft').addEventListener('click', loadDraft);
-
-    document.getElementById('clearAll').addEventListener('click', () => {
-      showConfirm(() => {
-        applyFormData({});
-        localStorage.removeItem(draftKey);
-        setStatus('已清空');
+      document.getElementById('msgClose').addEventListener('click', () => {
+        document.getElementById('messageModal').classList.remove('active');
       });
-    });
 
-    // 修复：生成多个前置和后置空白页的问题
-    document.getElementById('exportPdf').addEventListener('click', () => {
-      const defaultName = pdfFileName();
-      let finalName = prompt("请确认或修改PDF文件名：\n（注：生成高清PDF约需几秒钟，请耐心等待完成提示）", defaultName);
-      if (finalName === null) return; 
-      if (finalName.trim() === '') finalName = defaultName;
-
-      buildReport();
-      saveDraft();
-
-      if (typeof html2pdf !== 'undefined') {
-        setStatus('正在生成PDF，请稍候...');
-        
-        // 关键修复 1：重置滚动条。因为导出按钮在最底部，如果页面有滚动，html2canvas 会把滚动过的距离全渲染成顶部的空白页。
-        window.scrollTo(0, 0);
-        
-        document.body.classList.add('pdf-exporting');
-        const element = document.getElementById('report');
-        
-        const opt = {
-          margin:       0,
-          filename:     `${finalName}.pdf`,
-          image:        { type: 'jpeg', quality: 0.96 },
-          // 关键修复 2：强制设定 scrollY 和 scrollX 为 0，杜绝偏移量造成的空白。
-          html2canvas:  { scale: 2, useCORS: true, logging: false, scrollY: 0, scrollX: 0 },
-          jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' },
-          pagebreak:    { mode: ['css'] } 
-        };
-
-        // 给 DOM 一点点时间应用 classList，确保高度坍塌完成再抓取
-        setTimeout(() => {
-          html2pdf().set(opt).from(element).save().then(() => {
-            document.body.classList.remove('pdf-exporting');
-            setStatus('PDF导出成功');
-          }).catch(err => {
-            console.error(err);
-            document.body.classList.remove('pdf-exporting');
-            setStatus('导出错误，回退到普通打印');
-            document.title = finalName;
-            window.print();
-            setTimeout(() => { document.title = '差旅日志'; }, 1000);
-          });
-        }, 100);
-      } else {
-        document.title = finalName;
-        window.print();
-        setTimeout(() => { document.title = '差旅日志'; }, 1000);
+      let currentConfirmAction = null;
+      function showConfirm(text, callback) {
+        document.getElementById('confirmText').textContent = text;
+        currentConfirmAction = callback;
+        document.getElementById('actionConfirmModal').classList.add('active');
       }
-    });
+      document.getElementById('actionCancelBtn').addEventListener('click', () => {
+        document.getElementById('actionConfirmModal').classList.remove('active');
+        currentConfirmAction = null;
+      });
+      document.getElementById('actionConfirmBtn').addEventListener('click', () => {
+        document.getElementById('actionConfirmModal').classList.remove('active');
+        if (currentConfirmAction) currentConfirmAction();
+        currentConfirmAction = null;
+      });
 
-    fields.dateTime.value = currentDateTimeValue();
-    renderPhotos();
+      function getTodayStr() {
+        const d = new Date();
+        const y = d.getFullYear();
+        const m = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${y}-${m}-${day}`;
+      }
+
+      function formatDateStr(dateObj) {
+        if (!dateObj) return '';
+        const y = dateObj.getFullYear();
+        const m = String(dateObj.getMonth() + 1).padStart(2, '0');
+        const d = String(dateObj.getDate()).padStart(2, '0');
+        return `${y}-${m}-${d}`;
+      }
+
+      function escapeHtml(value) {
+        return String(value || '').replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;').replaceAll("'", '&#039;');
+      }
+
+      // ========== 核心：日历区间与防越界极致修复 ==========
+      try {
+        fpInstance = flatpickr(DOM.globalPeriod, {
+          mode: "range",
+          locale: "zh",
+          dateFormat: "Y-m-d",
+          maxDate: "today",    // 绝对屏蔽今天以后的日期
+          disableMobile: true, // 屏蔽 iOS 自带控件，统一全端体验
+          onChange: function(selectedDates, dateStr) {
+            appState.periodRaw = dateStr;
+            if (selectedDates.length > 0) {
+              appState.startDate = formatDateStr(selectedDates[0]);
+              appState.endDate = selectedDates.length === 2 ? formatDateStr(selectedDates[1]) : appState.startDate;
+              
+              // 自动对齐第一天的日期
+              if (appState.days.length > 0) {
+                 appState.days[0].date = appState.startDate;
+              }
+              renderDays();
+            } else {
+              appState.startDate = '';
+              appState.endDate = '';
+            }
+          }
+        });
+      } catch (e) {
+        console.error(e);
+        DOM.globalPeriod.removeAttribute('readonly');
+      }
+
+      // ========== 每日行程与内部照片的联合渲染 ==========
+      function renderDays() {
+        // 清理旧实例防内存泄漏
+        dailyFpInstances.forEach(fp => fp.destroy());
+        dailyFpInstances = [];
+        
+        DOM.dayList.innerHTML = '';
+        const today = getTodayStr();
+        const maxBound = (appState.endDate && appState.endDate < today) ? appState.endDate : today;
+
+        appState.days.forEach((day, index) => {
+          const card = document.createElement('div');
+          card.className = 'day-card';
+          
+          let photosHtml = day.photos.map((photo, pIdx) => `
+            <div class="photo-card" data-photo-id="${photo.id}">
+              <img src="${photo.dataUrl}">
+              <label>照片备注
+                <textarea class="photo-caption" data-day-id="${day.id}" data-photo-id="${photo.id}" placeholder="照片备注...">${escapeHtml(photo.caption)}</textarea>
+              </label>
+              <div class="photo-actions">
+                <button class="btn secondary btn-sm btn-move-up" data-day-id="${day.id}" data-photo-id="${photo.id}">上移</button>
+                <button class="btn danger btn-sm btn-remove-photo" data-day-id="${day.id}" data-photo-id="${photo.id}">删除</button>
+              </div>
+            </div>
+          `).join('');
+
+          card.innerHTML = `
+            <div class="day-header">
+              <span class="day-title">第 ${index + 1} 天</span>
+              <div style="display:flex; align-items:center; gap:8px;">
+                <!-- 彻底根治 iOS 无视 min/max 的漏洞：下方日历也用 Flatpickr 强制接管 -->
+                <input type="text" class="date-badge daily-date-input" data-id="${day.id}" data-field="date" value="${day.date}" placeholder="选择日期" readonly>
+                ${index > 0 ? `<button class="btn-remove-day" data-id="${day.id}" title="删除此天">×</button>` : `<span style="width:24px"></span>`}
+              </div>
+            </div>
+            <div class="grid">
+              <label>差旅人员
+                <input type="text" class="day-input" data-id="${day.id}" data-field="traveler" value="${escapeHtml(day.traveler)}" placeholder="姓名">
+              </label>
+              <label>企业名称
+                <input type="text" class="day-input" data-id="${day.id}" data-field="company" value="${escapeHtml(day.company)}" placeholder="企业名称">
+              </label>
+              <label>对接人员
+                <input type="text" class="day-input" data-id="${day.id}" data-field="contact" value="${escapeHtml(day.contact)}" placeholder="职务姓名">
+              </label>
+              <label>差旅记录
+                <textarea class="day-input" data-id="${day.id}" data-field="notes" placeholder="概述">${escapeHtml(day.notes)}</textarea>
+              </label>
+            </div>
+            
+            <div class="day-photos-section">
+              <div style="display:flex; justify-content:space-between; align-items:center;">
+                <span style="font-size:18px; font-weight:700; color:var(--muted);">当日现场照片</span>
+                <button class="btn secondary btn-add-day-photo" data-day-id="${day.id}" style="min-height:40px; font-size:16px;">＋ 添加照片</button>
+              </div>
+              <div class="photo-list">
+                ${photosHtml}
+              </div>
+            </div>
+          `;
+          DOM.dayList.appendChild(card);
+        });
+
+        // 将每天的日期输入框挂载强大的 Flatpickr，绝不允许选择越界日期
+        document.querySelectorAll('.daily-date-input').forEach(input => {
+          const dayId = input.dataset.id;
+          const fp = flatpickr(input, {
+            locale: "zh",
+            dateFormat: "Y-m-d",
+            minDate: appState.startDate || null,
+            maxDate: maxBound || "today", // 强行把最大日期封死在结束日期或今天
+            disableMobile: true,          // 绝对阻止 iOS 原生滚轮弹出来捣乱
+            onChange: function(selectedDates, dateStr) {
+              const dayObj = appState.days.find(d => d.id === dayId);
+              if (dayObj) dayObj.date = dateStr;
+            }
+          });
+          dailyFpInstances.push(fp);
+        });
+      }
+
+      function handleAddDay() {
+        if (!appState.startDate || !appState.endDate) {
+          showMessage("请先在上方差旅时段中选择起始和结束日期。");
+          if(fpInstance) fpInstance.open();
+          return;
+        }
+
+        let nextDateStr = appState.startDate;
+        let inheritTraveler = "";
+
+        if (appState.days.length > 0) {
+          const lastDay = appState.days[appState.days.length - 1];
+          inheritTraveler = lastDay.traveler; 
+          if (lastDay.date) {
+            const d = new Date(lastDay.date);
+            d.setDate(d.getDate() + 1); 
+            nextDateStr = formatDateStr(d);
+          }
+        }
+
+        const today = getTodayStr();
+        const maxAllowed = (appState.endDate && appState.endDate < today) ? appState.endDate : today;
+
+        if (nextDateStr > maxAllowed) {
+          showMessage(`已超出设定的差旅时段（截止于${appState.endDate}），若行程延期请先修改顶部时段。`);
+          return;
+        }
+
+        appState.days.push({
+          id: generateId(),
+          date: nextDateStr,
+          traveler: inheritTraveler,
+          company: '',
+          contact: '',
+          notes: '',
+          photos: []
+        });
+
+        renderDays();
+        setTimeout(() => window.scrollTo(0, document.body.scrollHeight), 50);
+      }
+
+      DOM.dayList.addEventListener('input', (e) => {
+        if (e.target.classList.contains('day-input') && !e.target.classList.contains('daily-date-input')) {
+          const id = e.target.dataset.id;
+          const day = appState.days.find(d => d.id === id);
+          if (day) day[e.target.dataset.field] = e.target.value;
+        }
+        if (e.target.classList.contains('photo-caption')) {
+          const day = appState.days.find(d => d.id === e.target.dataset.dayId);
+          if (day) {
+            const photo = day.photos.find(p => p.id === e.target.dataset.photoId);
+            if (photo) photo.caption = e.target.value;
+          }
+        }
+      });
+
+      DOM.dayList.addEventListener('click', (e) => {
+        if (e.target.classList.contains('btn-remove-day')) {
+          appState.days = appState.days.filter(d => d.id !== e.target.dataset.id);
+          renderDays();
+        }
+        if (e.target.classList.contains('btn-add-day-photo')) {
+          currentPhotoTargetDayId = e.target.dataset.dayId;
+          DOM.globalPhotoInput.click();
+        }
+        if (e.target.classList.contains('btn-remove-photo')) {
+          const day = appState.days.find(d => d.id === e.target.dataset.dayId);
+          if (day) {
+             day.photos = day.photos.filter(p => p.id !== e.target.dataset.photoId);
+             renderDays();
+          }
+        }
+        if (e.target.classList.contains('btn-move-up')) {
+          const day = appState.days.find(d => d.id === e.target.dataset.dayId);
+          if (day) {
+             const idx = day.photos.findIndex(p => p.id === e.target.dataset.photoId);
+             if (idx > 0) {
+               [day.photos[idx - 1], day.photos[idx]] = [day.photos[idx], day.photos[idx - 1]];
+               renderDays();
+             }
+          }
+        }
+      });
+
+      DOM.region.addEventListener('input', (e) => appState.region = e.target.value);
+      DOM.btnAddDay.addEventListener('click', () => handleAddDay());
+
+      // ========== 数据库 ==========
+      const DB_NAME = 'TravelLogDB_Proj';
+      const DB_VERSION = 1;
+      const STORE_NAME = 'drafts';
+
+      function initDB() {
+        return new Promise((resolve, reject) => {
+          const request = indexedDB.open(DB_NAME, DB_VERSION);
+          request.onerror = () => reject('数据库打开失败');
+          request.onsuccess = (e) => resolve(e.target.result);
+          request.onupgradeneeded = (e) => {
+            if (!e.target.result.objectStoreNames.contains(STORE_NAME)) {
+              e.target.result.createObjectStore(STORE_NAME);
+            }
+          };
+        });
+      }
+
+      async function dbSave(key, data) {
+        const db = await initDB();
+        return new Promise((resolve, reject) => {
+          const tx = db.transaction(STORE_NAME, 'readwrite');
+          tx.objectStore(STORE_NAME).put(data, key);
+          tx.oncomplete = () => resolve();
+          tx.onerror = () => reject(tx.error);
+        });
+      }
+
+      async function dbLoad(key) {
+        const db = await initDB();
+        return new Promise((resolve, reject) => {
+          const tx = db.transaction(STORE_NAME, 'readonly');
+          const req = tx.objectStore(STORE_NAME).get(key);
+          req.onsuccess = () => resolve(req.result);
+          req.onerror = () => reject(req.error);
+        });
+      }
+
+      // ========== 图片处理 ==========
+      function loadImage(dataUrl) {
+        return new Promise((resolve, reject) => {
+          const img = new Image();
+          img.onload = () => resolve(img);
+          img.onerror = reject;
+          img.src = dataUrl;
+        });
+      }
+
+      async function compressImage(dataUrl) {
+        const image = await loadImage(dataUrl);
+        const maxSide = 1400; 
+        const scale = Math.min(1, maxSide / Math.max(image.width, image.height));
+        const width = Math.max(1, Math.round(image.width * scale));
+        const height = Math.max(1, Math.round(image.height * scale));
+        const canvas = document.createElement('canvas');
+        const context = canvas.getContext('2d');
+        canvas.width = width;
+        canvas.height = height;
+        context.drawImage(image, 0, 0, width, height);
+        return canvas.toDataURL('image/jpeg', 0.84);
+      }
+
+      function readImage(file) {
+        return new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = async () => {
+            try {
+              resolve({ id: generateId(), dataUrl: await compressImage(reader.result), caption: '' });
+            } catch (error) { reject(error); }
+          };
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
+        });
+      }
+
+      DOM.globalPhotoInput.addEventListener('change', async (event) => {
+        const files = Array.from(event.target.files || []);
+        if (!files.length || !currentPhotoTargetDayId) return;
+        
+        showToast('图片处理中...');
+        try {
+          const images = await Promise.all(files.map(readImage));
+          const day = appState.days.find(d => d.id === currentPhotoTargetDayId);
+          if (day) {
+            day.photos = day.photos.concat(images);
+            renderDays();
+            showToast(`成功添加照片`);
+          }
+        } catch { 
+          showToast('处理失败'); 
+        } finally {
+          DOM.globalPhotoInput.value = ''; 
+        }
+      });
+
+      // ========== 存取清空交互 ==========
+      DOM.saveDraft.addEventListener('click', () => {
+        showConfirm("确定要保存草稿吗？\n保存后将覆盖数据库中的上一次草稿。", async () => {
+          showToast('保存中...');
+          try {
+            await dbSave(draftKey, JSON.parse(JSON.stringify(appState))); 
+            showToast('草稿已保存');
+          } catch (e) { showToast('保存失败'); }
+        });
+      });
+
+      DOM.loadDraft.addEventListener('click', () => {
+        showConfirm("确定要读取草稿吗？\n当前页面未保存的内容将被草稿覆盖。", async () => {
+          showToast('读取中...');
+          try {
+            const data = await dbLoad(draftKey);
+            if (data) {
+              appState = data;
+              appState.days.forEach(d => { if(!d.photos) d.photos = []; });
+              if (appState.periodRaw && fpInstance) fpInstance.setDate(appState.periodRaw.split(" 至 "), false);
+              DOM.region.value = appState.region || '';
+              renderDays();
+              showToast('草稿已读取');
+            } else {
+              showToast('本地无草稿');
+            }
+          } catch (e) { showToast('读取失败'); }
+        });
+      });
+
+      DOM.clearAll.addEventListener('click', () => {
+        showConfirm("确定要清空页面吗？\n此操作仅清空当前屏幕内容，不影响已保存的草稿，您可以随时重新读取草稿。", () => {
+          appState = { 
+            periodRaw: '', startDate: '', endDate: '', region: '', 
+            days: [{ id: generateId(), date: '', traveler: '', company: '', contact: '', notes: '', photos: [] }] 
+          };
+          if(fpInstance) fpInstance.clear();
+          DOM.region.value = '';
+          renderDays();
+          showToast('页面已清空');
+        });
+      });
+
+      // ========== 终极防白页 PDF 导出引擎 ==========
+      function cleanFilePart(val) { return String(val || '').trim().replace(/[\\/:*?"<>|]/g, '').replace(/\s+/g, ''); }
+      function pdfFileName() {
+        const datePart = cleanFilePart(appState.startDate).replace(/-/g, '');
+        const regionPart = cleanFilePart(appState.region);
+        return [datePart, regionPart, '差旅日志'].filter(Boolean).join('_') || '差旅日志';
+      }
+
+      function buildReport() {
+        let html = '';
+
+        appState.days.forEach((day, i) => {
+          html += `<div class="print-page">`;
+
+          if (i === 0) {
+            html += `
+              <section class="report-cover">
+                <p class="report-kicker">Business Travel Log</p>
+                <h1>差旅日志</h1>
+              </section>
+              <section class="global-info">
+                <h2>基本信息</h2>
+                <table class="report-table">
+                  <tr><th>差旅时段</th><td>${escapeHtml(appState.periodRaw)}</td></tr>
+                  <tr><th>区域</th><td>${escapeHtml(appState.region)}</td></tr>
+                </table>
+              </section>
+            `;
+          }
+
+          html += `
+            <div class="day-block">
+              <h2 style="color:#123f39; margin-bottom: 2mm;">行程记录</h2>
+              <div class="day-text-box">
+                <div class="day-block-title">第 ${i + 1} 天 &nbsp;|&nbsp; ${escapeHtml(day.date)}</div>
+                <table class="report-table">
+                  <tr><th>差旅人员</th><td>${escapeHtml(day.traveler)}</td></tr>
+                  <tr><th>企业名称</th><td>${escapeHtml(day.company)}</td></tr>
+                  <tr><th>对接人员</th><td>${escapeHtml(day.contact)}</td></tr>
+                </table>
+                <div class="report-notes">${escapeHtml(day.notes)}</div>
+              </div>
+            </div>
+          `;
+          
+          let photoStartIndex = 0;
+          if (day.photos && day.photos.length > 0) {
+             html += `
+               <div class="report-photo first-page-photo">
+                 <img src="${day.photos[0].dataUrl}">
+                 <p><strong>图 1：</strong>${escapeHtml(day.photos[0].caption || '')}</p>
+               </div>
+             `;
+             photoStartIndex = 1;
+          }
+          
+          html += `</div>`; 
+          
+          if (day.photos && day.photos.length > photoStartIndex) {
+             for (let p = photoStartIndex; p < day.photos.length; p += 2) {
+                html += `
+                  <div class="print-page">
+                    <h2 style="margin-bottom:4mm; color:#123f39;">第 ${i + 1} 天现场照片（续）</h2>
+                    <div class="photo-page-grid">
+                      <div class="report-photo">
+                        <img src="${day.photos[p].dataUrl}">
+                        <p><strong>图 ${p + 1}：</strong>${escapeHtml(day.photos[p].caption || '')}</p>
+                      </div>
+                `;
+                if (p + 1 < day.photos.length) {
+                    html += `
+                      <div class="report-photo">
+                        <img src="${day.photos[p + 1].dataUrl}">
+                        <p><strong>图 ${p + 2}：</strong>${escapeHtml(day.photos[p + 1].caption || '')}</p>
+                      </div>
+                    `;
+                }
+                html += `</div></div>`;
+             }
+          }
+        });
+
+        DOM.report.innerHTML = html;
+      }
+
+      DOM.exportPdf.addEventListener('click', async () => {
+        const defaultName = pdfFileName();
+        let finalName = prompt("确认文件名：", defaultName);
+        if (finalName === null) return; 
+        if (finalName.trim() === '') finalName = defaultName;
+
+        buildReport();
+        await dbSave(draftKey, JSON.parse(JSON.stringify(appState))).catch(()=>{}); 
+
+        if (typeof html2pdf !== 'undefined') {
+          // 呼出强制防白屏的加载遮罩
+          DOM.pdfLoadingSplash.style.display = 'flex';
+          
+          // 将隐藏的 report 拉到前端并显示，让浏览器有时间解码超大图片
+          DOM.appShell.style.display = 'none'; 
+          DOM.report.style.display = 'block';  
+          DOM.report.style.position = 'absolute';
+          DOM.report.style.left = '0';
+          DOM.report.style.top = '0';
+          DOM.report.style.zIndex = '9998';
+          window.scrollTo(0, 0); 
+          
+          const opt = {
+            margin: 0, 
+            filename: `${finalName}.pdf`, 
+            image: { type: 'jpeg', quality: 0.98 },
+            html2canvas: { scale: 2, useCORS: true, logging: false, scrollY: 0, scrollX: 0 },
+            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+            pagebreak: { mode: ['css', 'legacy'] } 
+          };
+
+          // 强制休眠 1.2 秒给浏览器渲染图片的时间，100% 杜绝白纸
+          setTimeout(() => {
+            html2pdf().set(opt).from(DOM.report).save().then(() => {
+              // 截完图后恢复原状
+              DOM.report.style.display = 'none';
+              DOM.appShell.style.display = 'block';
+              DOM.pdfLoadingSplash.style.display = 'none';
+              showToast('导出成功');
+            }).catch(err => {
+              DOM.report.style.display = 'none';
+              DOM.appShell.style.display = 'block';
+              DOM.pdfLoadingSplash.style.display = 'none';
+              window.print();
+            });
+          }, 1200);
+        } else {
+          window.print();
+        }
+      });
+
+      renderDays();
+
+    }); 
   </script>
 </body>
 </html>
+
+
+
